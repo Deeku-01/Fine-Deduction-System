@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Traffic Fine System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Dashboard</h1>
+    
+    <div class="row mb-4">
+        {% if user_type in ['admin', 'police'] %}
+        <!-- Admin/Police Dashboard -->
+        <div class="col-md-4">
+            <div class="stats-card">
+                <h3>{{ pending_challans }}</h3>
+                <p class="text-muted">Pending Challans</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card">
+                <h3>{{ paid_challans }}</h3>
+                <p class="text-muted">Paid Challans</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card">
+                <h3>₹{{ "{:,.2f}".format(total_collection) }}</h3>
+                <p class="text-muted">Total Collection</p>
+            </div>
+        </div>
+        {% else %}
+        <!-- User Dashboard -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Your Challans Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="stats-card text-center mb-3">
+                                <h3 class="text-primary">{{ user_stats.total_challans or 0 }}</h3>
+                                <p class="text-muted">Total Challans</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="stats-card text-center mb-3">
+                                <h3 class="text-warning">{{ user_stats.pending_challans or 0 }}</h3>
+                                <p class="text-muted">Pending Challans</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Payment Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="stats-card text-center mb-3">
+                                <h3 class="text-danger">₹{{ "{:,.2f}".format(user_stats.pending_amount or 0) }}</h3>
+                                <p class="text-muted">Pending Amount</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="stats-card text-center mb-3">
+                                <h3 class="text-success">₹{{ "{:,.2f}".format(user_stats.total_paid or 0) }}</h3>
+                                <p class="text-muted">Total Paid</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if user_type in ['admin', 'police'] %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Quick Actions</h5>
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('record_violation') }}" class="btn btn-primary">
+                            Record New Violation
+                        </a>
+                        <a href="{{ url_for('view_challans') }}" class="btn btn-outline-primary">
+                            View All Challans
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Quick Actions</h5>
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('view_challans') }}" class="btn btn-primary">
+                            View My Challans
+                        </a>
+                        <a href="{{ url_for('profile') }}" class="btn btn-outline-primary">
+                            View Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Recent Violations</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Location</th>
+                                    <th>Status</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for challan in recent_challans %}
+                                <tr>
+                                    <td>{{ challan.issue_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ challan.location }}</td>
+                                    <td>
+                                        <span class="challan-status status-{{ challan.status }}">
+                                            {{ challan.status }}
+                                        </span>
+                                    </td>
+                                    <td>₹{{ "{:,.2f}".format(challan.fine_amt) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">System Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="violationChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Sample chart data - replace with actual data from backend
+    const ctx = document.getElementById('violationChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Speeding', 'Red Light', 'No Parking', 'Others'],
+            datasets: [{
+                label: 'Violations by Type',
+                data: [12, 19, 3, 5],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(54, 162, 235, 0.2)',
+                    'rgba(255, 206, 86, 0.2)',
+                    'rgba(75, 192, 192, 0.2)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endblock %} 

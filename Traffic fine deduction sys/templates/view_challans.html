@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}View Challans - Traffic Fine System{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>View Challans</h2>
+    
+    {% if challans %}
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Challan No.</th>
+                    <th>Vehicle No.</th>
+                    <th>Violation</th>
+                    <th>Fine Amount</th>
+                    <th>Location</th>
+                    <th>Issue Date</th>
+                    <th>Status</th>
+                    <th>Issued By</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for challan in challans %}
+                <tr>
+                    <td>{{ challan.challan_no }}</td>
+                    <td>{{ challan.reg_number }}</td>
+                    <td>{{ challan.violation_name }}</td>
+                    <td>₹{{ "%.2f"|format(challan.fine_amt) }}</td>
+                    <td>{{ challan.location }}</td>
+                    <td>{{ challan.issue_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>
+                        <span class="badge {% if challan.status == 'pending' %}bg-warning{% else %}bg-success{% endif %}">
+                            {{ challan.status|title }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if challan.badge_number %}
+                            {{ challan.police_rank }} ({{ challan.badge_number }})
+                            <br>
+                            <small>{{ challan.station_name }}</small>
+                        {% else %}
+                            System Generated
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if challan.status == 'pending' and current_user.user_type == 'driver' %}
+                            <button class="btn btn-primary btn-sm pay-challan-btn" 
+                                    data-challan-id="{{ challan.challan_id }}"
+                                    data-amount="{{ challan.fine_amt }}"
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#paymentModal">
+                                Pay Now
+                            </button>
+                        {% elif challan.status == 'paid' %}
+                            <button class="btn btn-success btn-sm" disabled>
+                                Paid
+                                {% if challan.payment_date %}
+                                    <br>
+                                    <small>{{ challan.payment_date.strftime('%Y-%m-%d') }}</small>
+                                {% endif %}
+                            </button>
+                        {% endif %}
+                        
+                        <button class="btn btn-info btn-sm view-details-btn"
+                                data-challan-id="{{ challan.challan_id }}"
+                                data-bs-toggle="modal" 
+                                data-bs-target="#detailsModal">
+                            View Details
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        No challans found.
+    </div>
+    {% endif %}
+</div>
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Pay Challan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="paymentForm">
+                    <input type="hidden" id="challanId" name="challan_id">
+                    <div class="mb-3">
+                        <label class="form-label">Amount to Pay:</label>
+                        <h4 class="text-primary">₹<span id="paymentAmount"></span></h4>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Payment Method</label>
+                        <select class="form-select" name="payment_method" required>
+                            <option value="upi">UPI</option>
+                            <option value="card">Credit/Debit Card</option>
+                            <option value="netbanking">Net Banking</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="confirmPayment">Confirm Payment</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Details Modal -->
+<div class="modal fade" id="detailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Challan Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <img id="challanImage" src="" class="img-fluid mb-3" alt="Violation Image">
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Violation Details</h6>
+                        <dl class="row">
+                            <dt class="col-sm-4">Challan No</dt>
+                            <dd class="col-sm-8" id="detailChallanNo"></dd>
+                            
+                            <dt class="col-sm-4">Vehicle No</dt>
+                            <dd class="col-sm-8" id="detailVehicleNo"></dd>
+                            
+                            <dt class="col-sm-4">Violation</dt>
+                            <dd class="col-sm-8" id="detailViolation"></dd>
+                            
+                            <dt class="col-sm-4">Fine Amount</dt>
+                            <dd class="col-sm-8" id="detailAmount"></dd>
+                            
+                            <dt class="col-sm-4">Location</dt>
+                            <dd class="col-sm-8" id="detailLocation"></dd>
+                            
+                            <dt class="col-sm-4">Issue Date</dt>
+                            <dd class="col-sm-8" id="detailDate"></dd>
+                            
+                            <dt class="col-sm-4">Status</dt>
+                            <dd class="col-sm-8" id="detailStatus"></dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle payment button click
+    const payButtons = document.querySelectorAll('.pay-challan-btn');
+    payButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const challanId = this.dataset.challanId;
+            const amount = this.dataset.amount;
+            document.getElementById('challanId').value = challanId;
+            document.getElementById('paymentAmount').textContent = parseFloat(amount).toFixed(2);
+        });
+    });
+    
+    // Handle payment confirmation
+    document.getElementById('confirmPayment').addEventListener('click', function() {
+        const challanId = document.getElementById('challanId').value;
+        const form = document.getElementById('paymentForm');
+        const formData = new FormData(form);
+        
+        fetch(`/pay-challan/${challanId}`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Payment successful!');
+                location.reload();
+            } else {
+                alert('Payment failed: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error processing payment: ' + error);
+        });
+    });
+    
+    // Handle view details button click
+    const detailButtons = document.querySelectorAll('.view-details-btn');
+    detailButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const row = this.closest('tr');
+            const cells = row.cells;
+            
+            document.getElementById('detailChallanNo').textContent = cells[0].textContent;
+            document.getElementById('detailVehicleNo').textContent = cells[1].textContent;
+            document.getElementById('detailViolation').textContent = cells[2].textContent;
+            document.getElementById('detailAmount').textContent = cells[3].textContent;
+            document.getElementById('detailLocation').textContent = cells[4].textContent;
+            document.getElementById('detailDate').textContent = cells[5].textContent;
+            document.getElementById('detailStatus').textContent = cells[6].textContent;
+            
+            // Set challan image if available
+            const challan = {{ challans|tojson|safe }}.find(c => c.challan_id === this.dataset.challanId);
+            if (challan && challan.image_url) {
+                document.getElementById('challanImage').src = challan.image_url;
+                document.getElementById('challanImage').style.display = 'block';
+            } else {
+                document.getElementById('challanImage').style.display = 'none';
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 
