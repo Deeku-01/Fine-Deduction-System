@@ -1,14 +1,31 @@
-opencv-python>=4.8.0
-ultralytics>=8.0.0  # For YOLOv8
+# Core dependencies
+Flask>=2.0.0
+Werkzeug>=2.0.0
+Flask-Login>=0.6.0
 mysql-connector-python>=8.0.0
 python-dotenv>=1.0.0
-supabase>=2.0.0
-fastapi>=0.100.0
-uvicorn>=0.23.0
-python-multipart>=0.0.6
-pillow>=10.0.0
+
+# Computer Vision and Image Processing
+opencv-python>=4.8.0
+ultralytics>=8.0.0  # For YOLOv8
+easyocr>=1.7.0
+Pillow>=10.0.0
 numpy>=1.24.0
-pydantic>=2.0.0
-pytest>=7.4.0
+
+# Storage and Database
+supabase>=2.0.0
+SQLAlchemy>=2.0.0
+
+# Security
 python-jose[cryptography]>=3.3.0
-passlib[bcrypt]>=1.7.4 
+passlib[bcrypt]>=1.7.4
+PyJWT>=2.0.0
+
+# Testing and Development
+pytest>=7.4.0
+black>=23.0.0
+flake8>=6.0.0
+
+# Web and API
+requests>=2.31.0
+gunicorn>=21.2.0  # For production deployment 
